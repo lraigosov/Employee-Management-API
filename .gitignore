@@ -1,6 +1,12 @@
 # Archivos de requerimientos del proyecto
 requerimiento_proyecto.md
 
+# IMPORTANT: Do not ignore LICENSE file - author attribution required
+!LICENSE
+
+# Environment variables
+.env
+
 # Visual Studio / VS Code
 .vs/
 .vscode/
@@ -66,3 +72,10 @@ local.settings.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Test Results
+*.trx
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
