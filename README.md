@@ -1,31 +1,29 @@
 # Employee-Management-API
 
-API RESTful moderna y segura para la gestión de empleados y departamentos, desarrollada con .NET 9, siguiendo principios de Clean Architecture.
+API RESTful para la gestión de empleados y departamentos, desarrollada con .NET 9 siguiendo principios de Clean Architecture.
 
 ## Tecnologías Utilizadas
 
-- **.NET 9.0** - Framework principal
-- **ASP.NET Core** - Web API
-- **Entity Framework Core 9** - ORM con SQL Server
-- **JWT Bearer Authentication** - Seguridad
-- **FluentValidation** - Validaciones
-- **Swagger/OpenAPI** - Documentación de API
-- **xUnit, Moq, FluentAssertions** - Testing
-- **Docker & Docker Compose** - Contenedorización
+- **.NET 9.0**: Framework principal
+- **ASP.NET Core**: Web API
+- **Entity Framework Core 9**: ORM con SQL Server
+- **JWT Bearer Authentication**: Seguridad
+- **FluentValidation**: Validaciones
+- **Swagger/OpenAPI**: Documentación de API
+- **xUnit, Moq, FluentAssertions**: Testing
+- **Docker & Docker Compose**: Contenedorización
 
 ## Arquitectura
 
-El proyecto sigue **Clean Architecture** con separación de responsabilidades:
+Diagrama de alto nivel basado en el código actual:
 
-```
-src/
-├── EmployeeManagement.Api/          # Capa de presentación (Controllers, Auth)
-├── EmployeeManagement.Application/  # Lógica de aplicación (Services, DTOs, Validators)
-├── EmployeeManagement.Domain/       # Entidades de dominio e interfaces
-└── EmployeeManagement.Infrastructure/ # Implementación (EF Core, Repositories)
-
-tests/
-└── EmployeeManagement.Tests.Unit/   # Tests unitarios con xUnit
+```mermaid
+flowchart LR
+  Client[Cliente] --> API[EmployeeManagement.Api\nControllers: Auth, Employees, Departments]
+  API --> App[EmployeeManagement.Application\nServices, DTOs, Validators]
+  App --> Domain[EmployeeManagement.Domain\nEntities, Enums, Interfaces]
+  App --> Infra[EmployeeManagement.Infrastructure\nRepositories, UnitOfWork]
+  Infra --> Db[(SQL Server)\nApplicationDbContext]
 ```
 
 ## Endpoints Principales
@@ -61,8 +59,8 @@ tests/
 # Iniciar todos los servicios
 docker compose up -d
 
-# La API estará disponible en http://localhost:8080
-# SQL Server en localhost:1433
+# API: http://localhost:8080
+# SQL Server: localhost:1433
 ```
 
 ### Ejecución Local
@@ -71,16 +69,15 @@ docker compose up -d
 # Restaurar dependencias
 dotnet restore
 
-# Ejecutar migraciones
-dotnet ef database update --project src/EmployeeManagement.Infrastructure --startup-project src/EmployeeManagement.Api
-
 # Ejecutar la API
 dotnet run --project src/EmployeeManagement.Api
 ```
 
+Nota: el arranque en Development ejecuta `Database.Migrate()`. El repositorio no incluye migraciones; si se requieren, créalas con `dotnet ef migrations add <Nombre>` en la capa `Infrastructure` antes de usar `database update`.
+
 ## Autenticación
 
-Para usar la API, primero obtenga un token JWT:
+Para obtener un token JWT:
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
@@ -91,15 +88,31 @@ curl -X POST http://localhost:8080/api/auth/login \
   }'
 ```
 
-Luego use el token en los headers:
+Luego úsalo en los headers:
+
 ```
-Authorization: Bearer {su-token-aqui}
+Authorization: Bearer <TOKEN>
+```
+
+Diagrama de flujo (login):
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as AuthController
+    participant T as TokenService
+    C->>A: POST /api/auth/login {username,password}
+    A->>T: ValidateCredentials()
+    T-->>A: true/false
+    A->>T: GenerateToken(username)
+    T-->>A: JWT
+    A-->>C: 200 {token, expiration} / 401
 ```
 
 ## Swagger UI
 
-Acceda a la documentación interactiva de la API:
-- **Desarrollo**: http://localhost:8080/swagger
+Documentación interactiva:
+- Desarrollo: http://localhost:8080/swagger
 
 ## Testing
 
@@ -107,34 +120,41 @@ Acceda a la documentación interactiva de la API:
 # Ejecutar todos los tests
 dotnet test
 
-# Ejecutar con cobertura
+# Cobertura
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
 ## Variables de Entorno
 
-Copie `.env.example` a `.env` y ajuste según necesidad:
+Usa variables (dummies en documentación):
 
 ```bash
 ASPNETCORE_ENVIRONMENT=Development
-ConnectionStrings__Default=Server=localhost;Database=EmployeeManagement;...
-Jwt__Key=SuperSecretKeyForJWTAuthentication2024!
+ConnectionStrings__Default=Server=<host>;Database=<db>;User Id=<user>;Password=<password>;TrustServerCertificate=True
+Jwt__Key=CHANGE_ME
 Jwt__Issuer=http://localhost:8080
 Jwt__Audience=http://localhost:8080
 ```
 
+Validación de secretos (estado actual del repo):
+- `src/EmployeeManagement.Api/appsettings.json`: contiene cadena de conexión y clave JWT (versionado)
+- `docker-compose.yml`: define `SA_PASSWORD` y `Jwt__Key` (versionado)
+- `.env`: ignorado por Git (preferible ubicar secretos aquí)
+
+Recomendación: mover valores sensibles a `.env` y configurar por entorno; no incluir secretos en archivos versionados.
+
 ## Health Checks
 
-- `/health/live` - Liveness probe
-- `/health/ready` - Readiness probe (incluye verificación de BD)
+- `/health/live`: liveness
+- `/health/ready`: readiness (verifica BD)
 
 ## Modelo de Dominio
 
 ### Employee
-- Cálculo automático de salario según posición
-- Developer: +10% bonus
-- Manager: +20% bonus
-- HR/Sales: Salario base
+- Cálculo de salario según posición
+- Developer: +10%
+- Manager: +20%
+- HR/Sales: base
 
 ### Department
 - Relación 1:N con Employees
@@ -142,10 +162,7 @@ Jwt__Audience=http://localhost:8080
 
 ## CI/CD
 
-GitHub Actions configurado para:
-- Build automático
-- Ejecución de tests
-- Validación de código
+No hay pipeline CI/CD incluido en este repositorio.
 
 ## Autor
 
@@ -153,22 +170,4 @@ GitHub Actions configurado para:
 
 ## Licencia
 
-Este proyecto es de código abierto y está disponible para la comunidad bajo las siguientes condiciones:
-
-- ✅ Libre uso, modificación y distribución
-- ✅ Uso comercial y no comercial permitido
-- ⚠️ **Se debe mantener el crédito al autor original**: Luis Raigoso (@LuisRai / lraigosov)
-- ⚠️ Cualquier fork o derivado debe incluir esta atribución
-
-### Atribución Requerida
-
-Al usar, modificar o distribuir este código, debe incluirse la siguiente atribución:
-
-```
-Proyecto original desarrollado por Luis Raigoso (@LuisRai / lraigosov)
-GitHub: https://github.com/lraigosov
-```
-
----
-
-**Desarrollado por Luis Raigoso para la comunidad de desarrolladores**
+Consulta las condiciones en el archivo `LICENSE` incluido en el repositorio.

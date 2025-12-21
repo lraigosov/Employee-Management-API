@@ -105,6 +105,25 @@ if (app.Environment.IsDevelopment())
     dbContext.Database.Migrate();
 }
 
+// Fail-fast in non-development if JWT key is not configured
+if (!app.Environment.IsDevelopment())
+{
+    var jwtKey = app.Configuration["Jwt:Key"];
+    if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey == "CHANGE_ME")
+    {
+        app.Logger.LogCritical("JWT key is not configured. Set 'Jwt__Key' via environment or .env.");
+        throw new InvalidOperationException("JWT key is not configured.");
+    }
+
+    // Validate connection string in non-development
+    var connString = app.Configuration.GetConnectionString("Default");
+    if (string.IsNullOrWhiteSpace(connString) || connString.Contains("Password=CHANGE_ME"))
+    {
+        app.Logger.LogCritical("Database connection string is not properly configured. Set 'ConnectionStrings__Default' via environment or .env.");
+        throw new InvalidOperationException("Database connection string is not properly configured.");
+    }
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 

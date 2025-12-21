@@ -5,13 +5,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
-      - ConnectionStrings__Default=Server=db;Database=EmployeeManagement;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True
-      - Jwt__Key=SuperSecretKeyForJWTAuthentication2024!
-      - Jwt__Issuer=http://localhost:8080
-      - Jwt__Audience=http://localhost:8080
     depends_on:
       db:
         condition: service_healthy
@@ -23,8 +21,9 @@ services:
 
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    env_file:
+      - .env
     environment:
-      - SA_PASSWORD=YourStrong!Passw0rd
       - ACCEPT_EULA=Y
     ports:
       - "1433:1433"
