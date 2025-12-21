@@ -19,11 +19,11 @@ Diagrama de alto nivel basado en el código actual:
 
 ```mermaid
 flowchart LR
-  Client[Cliente] --> API[EmployeeManagement.Api\nControllers: Auth, Employees, Departments]
-  API --> App[EmployeeManagement.Application\nServices, DTOs, Validators]
-  App --> Domain[EmployeeManagement.Domain\nEntities, Enums, Interfaces]
-  App --> Infra[EmployeeManagement.Infrastructure\nRepositories, UnitOfWork]
-  Infra --> Db[(SQL Server)\nApplicationDbContext]
+  Client[Cliente] --> API["EmployeeManagement.Api<br/>Controllers: Auth, Employees, Departments"]
+  API --> App["EmployeeManagement.Application<br/>Services, DTOs, Validators"]
+  App --> Domain["EmployeeManagement.Domain<br/>Entities, Enums, Interfaces"]
+  App --> Infra["EmployeeManagement.Infrastructure<br/>Repositories, UnitOfWork"]
+  Infra --> Db[("SQL Server<br/>ApplicationDbContext")]
 ```
 
 ## Endpoints Principales
