@@ -32,6 +32,11 @@ public class DepartmentService
         return departments.Select(MapToDto);
     }
 
+    public Task<bool> ExistsAsync(int id, CancellationToken ct = default)
+    {
+        return _departmentRepository.ExistsAsync(id, ct);
+    }
+
     public async Task<decimal> GetTotalSalaryAsync(int departmentId, CancellationToken ct = default)
     {
         var employees = await _employeeRepository.GetByDepartmentIdAsync(departmentId, ct);

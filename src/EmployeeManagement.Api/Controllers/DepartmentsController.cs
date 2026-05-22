@@ -39,6 +39,9 @@ public class DepartmentsController : ControllerBase
     [HttpGet("{id}/employees")]
     public async Task<IActionResult> GetEmployees(int id, CancellationToken ct)
     {
+        if (!await _departmentService.ExistsAsync(id, ct))
+            return NotFound();
+
         var employees = await _employeeService.GetByDepartmentIdAsync(id, ct);
         return Ok(employees);
     }
@@ -46,6 +49,9 @@ public class DepartmentsController : ControllerBase
     [HttpGet("{id}/total-salary")]
     public async Task<IActionResult> GetTotalSalary(int id, CancellationToken ct)
     {
+        if (!await _departmentService.ExistsAsync(id, ct))
+            return NotFound();
+
         var totalSalary = await _departmentService.GetTotalSalaryAsync(id, ct);
         return Ok(new { departmentId = id, totalSalary });
     }

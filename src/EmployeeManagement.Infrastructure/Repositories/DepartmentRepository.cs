@@ -17,6 +17,7 @@ public class DepartmentRepository : IDepartmentRepository
     public async Task<Department?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         return await _context.Departments
+            .AsNoTracking()
             .Include(d => d.Employees)
             .FirstOrDefaultAsync(d => d.Id == id, ct);
     }
@@ -24,8 +25,14 @@ public class DepartmentRepository : IDepartmentRepository
     public async Task<IEnumerable<Department>> GetAllAsync(CancellationToken ct = default)
     {
         return await _context.Departments
+            .AsNoTracking()
             .Include(d => d.Employees)
             .ToListAsync(ct);
+    }
+
+    public Task<bool> ExistsAsync(int id, CancellationToken ct = default)
+    {
+        return _context.Departments.AnyAsync(d => d.Id == id, ct);
     }
 
     public async Task AddAsync(Department department, CancellationToken ct = default)
@@ -39,13 +46,12 @@ public class DepartmentRepository : IDepartmentRepository
         return Task.CompletedTask;
     }
 
-    public Task DeleteAsync(int id, CancellationToken ct = default)
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var department = _context.Departments.Find(id);
+        var department = await _context.Departments.FirstOrDefaultAsync(d => d.Id == id, ct);
         if (department != null)
         {
             _context.Departments.Remove(department);
         }
-        return Task.CompletedTask;
     }
 }

@@ -37,18 +37,32 @@ public class EmployeesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateEmployeeDto dto, CancellationToken ct)
     {
-        var employee = await _employeeService.CreateAsync(dto, ct);
-        return CreatedAtAction(nameof(GetById), new { id = employee.Id }, employee);
+        try
+        {
+            var employee = await _employeeService.CreateAsync(dto, ct);
+            return CreatedAtAction(nameof(GetById), new { id = employee.Id }, employee);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateEmployeeDto dto, CancellationToken ct)
     {
-        var employee = await _employeeService.UpdateAsync(id, dto, ct);
-        if (employee == null)
-            return NotFound();
+        try
+        {
+            var employee = await _employeeService.UpdateAsync(id, dto, ct);
+            if (employee == null)
+                return NotFound();
 
-        return Ok(employee);
+            return Ok(employee);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id}")]
