@@ -7,11 +7,16 @@ namespace EmployeeManagement.Application.Services;
 public class EmployeeService
 {
     private readonly IEmployeeRepository _employeeRepository;
+    private readonly IDepartmentRepository _departmentRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public EmployeeService(IEmployeeRepository employeeRepository, IUnitOfWork unitOfWork)
+    public EmployeeService(
+        IEmployeeRepository employeeRepository,
+        IDepartmentRepository departmentRepository,
+        IUnitOfWork unitOfWork)
     {
         _employeeRepository = employeeRepository;
+        _departmentRepository = departmentRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -35,6 +40,11 @@ public class EmployeeService
 
     public async Task<EmployeeDto> CreateAsync(CreateEmployeeDto dto, CancellationToken ct = default)
     {
+        if (!await _departmentRepository.ExistsAsync(dto.DepartmentId, ct))
+        {
+            throw new ArgumentException("Department does not exist.");
+        }
+
         var employee = new Employee
         {
             Name = dto.Name,
@@ -54,6 +64,11 @@ public class EmployeeService
     {
         var employee = await _employeeRepository.GetByIdAsync(id, ct);
         if (employee == null) return null;
+
+        if (!await _departmentRepository.ExistsAsync(dto.DepartmentId, ct))
+        {
+            throw new ArgumentException("Department does not exist.");
+        }
 
         employee.Name = dto.Name;
         employee.Email = dto.Email;

@@ -17,6 +17,7 @@ public class EmployeeRepository : IEmployeeRepository
     public async Task<Employee?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         return await _context.Employees
+            .AsNoTracking()
             .Include(e => e.Department)
             .FirstOrDefaultAsync(e => e.Id == id, ct);
     }
@@ -24,6 +25,7 @@ public class EmployeeRepository : IEmployeeRepository
     public async Task<IEnumerable<Employee>> GetAllAsync(CancellationToken ct = default)
     {
         return await _context.Employees
+            .AsNoTracking()
             .Include(e => e.Department)
             .ToListAsync(ct);
     }
@@ -31,6 +33,7 @@ public class EmployeeRepository : IEmployeeRepository
     public async Task<IEnumerable<Employee>> GetByDepartmentIdAsync(int departmentId, CancellationToken ct = default)
     {
         return await _context.Employees
+            .AsNoTracking()
             .Include(e => e.Department)
             .Where(e => e.DepartmentId == departmentId)
             .ToListAsync(ct);
@@ -47,13 +50,12 @@ public class EmployeeRepository : IEmployeeRepository
         return Task.CompletedTask;
     }
 
-    public Task DeleteAsync(int id, CancellationToken ct = default)
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var employee = _context.Employees.Find(id);
+        var employee = await _context.Employees.FirstOrDefaultAsync(e => e.Id == id, ct);
         if (employee != null)
         {
             _context.Employees.Remove(employee);
         }
-        return Task.CompletedTask;
     }
 }

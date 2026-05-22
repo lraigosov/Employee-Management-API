@@ -11,14 +11,19 @@ namespace EmployeeManagement.Tests.Unit;
 public class EmployeeServiceTests
 {
     private readonly Mock<IEmployeeRepository> _mockRepository;
+    private readonly Mock<IDepartmentRepository> _mockDepartmentRepository;
     private readonly Mock<IUnitOfWork> _mockUnitOfWork;
     private readonly EmployeeService _employeeService;
 
     public EmployeeServiceTests()
     {
         _mockRepository = new Mock<IEmployeeRepository>();
+        _mockDepartmentRepository = new Mock<IDepartmentRepository>();
         _mockUnitOfWork = new Mock<IUnitOfWork>();
-        _employeeService = new EmployeeService(_mockRepository.Object, _mockUnitOfWork.Object);
+        _employeeService = new EmployeeService(
+            _mockRepository.Object,
+            _mockDepartmentRepository.Object,
+            _mockUnitOfWork.Object);
     }
 
     [Fact]
@@ -76,6 +81,8 @@ public class EmployeeServiceTests
             DepartmentId = 1
         };
 
+        _mockDepartmentRepository.Setup(r => r.ExistsAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _mockRepository.Setup(r => r.AddAsync(It.IsAny<Employee>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         _mockUnitOfWork.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
@@ -91,6 +98,69 @@ public class EmployeeServiceTests
         result.BaseSalary.Should().Be(6000);
         _mockRepository.Verify(r => r.AddAsync(It.IsAny<Employee>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockUnitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShouldThrowArgumentException_WhenDepartmentDoesNotExist()
+    {
+        // Arrange
+        var createDto = new CreateEmployeeDto
+        {
+            Name = "Jane Smith",
+            Email = "jane@example.com",
+            BaseSalary = 6000,
+            Position = JobPosition.Manager,
+            DepartmentId = 99
+        };
+
+        _mockDepartmentRepository.Setup(r => r.ExistsAsync(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var act = () => _employeeService.CreateAsync(createDto);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("Department does not exist.");
+        _mockRepository.Verify(r => r.AddAsync(It.IsAny<Employee>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ShouldThrowArgumentException_WhenDepartmentDoesNotExist()
+    {
+        // Arrange
+        var existingEmployee = new Employee
+        {
+            Id = 1,
+            Name = "John Doe",
+            Email = "john@example.com",
+            BaseSalary = 5000,
+            Position = JobPosition.Developer,
+            DepartmentId = 1
+        };
+
+        var updateDto = new UpdateEmployeeDto
+        {
+            Name = "John Doe",
+            Email = "john@example.com",
+            BaseSalary = 5200,
+            Position = JobPosition.Developer,
+            DepartmentId = 99
+        };
+
+        _mockRepository.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingEmployee);
+        _mockDepartmentRepository.Setup(r => r.ExistsAsync(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var act = () => _employeeService.UpdateAsync(1, updateDto);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("Department does not exist.");
+        _mockRepository.Verify(r => r.UpdateAsync(It.IsAny<Employee>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockUnitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

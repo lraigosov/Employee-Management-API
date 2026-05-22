@@ -1,173 +1,199 @@
 # Employee-Management-API
 
-API RESTful para la gestión de empleados y departamentos, desarrollada con .NET 9 siguiendo principios de Clean Architecture.
+API RESTful para la gestión de empleados y departamentos, implementada en .NET 9 con separación por capas (Api, Application, Domain, Infrastructure) y orientada a escenarios de backoffice empresarial.
 
-## Tecnologías Utilizadas
+## 1) Problema que resuelve
 
-- **.NET 9.0**: Framework principal
-- **ASP.NET Core**: Web API
-- **Entity Framework Core 9**: ORM con SQL Server
-- **JWT Bearer Authentication**: Seguridad
-- **FluentValidation**: Validaciones
-- **Swagger/OpenAPI**: Documentación de API
-- **xUnit, Moq, FluentAssertions**: Testing
-- **Docker & Docker Compose**: Contenedorización
+Las organizaciones pequeñas y medianas suelen gestionar información de RRHH en hojas de cálculo o sistemas aislados, lo que genera:
 
-## Arquitectura
+- Inconsistencia de datos entre áreas.
+- Dificultad para consultar estructuras organizacionales.
+- Cálculos manuales de nómina por reglas de cargo.
+- Ausencia de una API segura para integrarse con otros sistemas.
 
-Diagrama de alto nivel basado en el código actual:
+Esta API centraliza la gestión de empleados y departamentos con autenticación JWT, validación de entrada y operaciones CRUD listas para integrar con paneles, ERPs o herramientas internas.
+
+## 2) Ámbitos de aplicación
+
+- RRHH: alta/baja/actualización de empleados, asignación por departamento.
+- Administración y finanzas: cálculo de salario total por área.
+- TI y arquitectura empresarial: fuente única de datos organizacionales vía API.
+- Integraciones internas: consumo desde portales web, intranet o servicios de terceros.
+
+## 3) Casos de uso
+
+- Crear un nuevo empleado y asignarlo a un departamento.
+- Consultar el listado de empleados de un departamento específico.
+- Obtener el salario total de un departamento para reportes.
+- Actualizar datos de empleado (posición, salario base, email).
+- Eliminar empleados o departamentos obsoletos.
+- Consumir documentación OpenAPI para integración rápida.
+
+## 4) Stack tecnológico
+
+- .NET 9 / ASP.NET Core Web API
+- Entity Framework Core 9 + SQL Server
+- JWT Bearer Authentication
+- FluentValidation
+- Swagger/OpenAPI
+- xUnit + Moq + FluentAssertions
+- Docker y Docker Compose
+
+## 5) Arquitectura del repositorio
 
 ```mermaid
 flowchart LR
-  Client[Cliente] --> API["EmployeeManagement.Api<br/>Controllers: Auth, Employees, Departments"]
-  API --> App["EmployeeManagement.Application<br/>Services, DTOs, Validators"]
-  App --> Domain["EmployeeManagement.Domain<br/>Entities, Enums, Interfaces"]
-  App --> Infra["EmployeeManagement.Infrastructure<br/>Repositories, UnitOfWork"]
-  Infra --> Db[("SQL Server<br/>ApplicationDbContext")]
+  Client[Cliente o Sistema Externo] --> API[EmployeeManagement.Api]
+  API --> APP[EmployeeManagement.Application]
+  APP --> DOMAIN[EmployeeManagement.Domain]
+  APP --> INFRA[EmployeeManagement.Infrastructure]
+  INFRA --> DB[(SQL Server)]
 ```
 
-## Endpoints Principales
+### Capas
 
-### Autenticación
-- `POST /api/auth/login` - Autenticación con JWT
+- Api: controladores, autenticación, configuración y exposición HTTP.
+- Application: casos de uso, DTOs, validaciones y orquestación.
+- Domain: entidades, reglas de negocio y contratos (interfaces).
+- Infrastructure: EF Core, repositorios y Unit of Work.
+
+## 6) Endpoints principales
+
+### Auth
+
+- `POST /api/auth/login`
 
 ### Employees
-- `GET /api/employees` - Listar todos los empleados
-- `GET /api/employees/{id}` - Obtener empleado por ID
-- `POST /api/employees` - Crear empleado
-- `PUT /api/employees/{id}` - Actualizar empleado
-- `DELETE /api/employees/{id}` - Eliminar empleado
+
+- `GET /api/employees`
+- `GET /api/employees/{id}`
+- `POST /api/employees`
+- `PUT /api/employees/{id}`
+- `DELETE /api/employees/{id}`
 
 ### Departments
-- `GET /api/departments` - Listar todos los departamentos
-- `GET /api/departments/{id}` - Obtener departamento por ID
-- `GET /api/departments/{id}/employees` - Empleados de un departamento
-- `GET /api/departments/{id}/total-salary` - Salario total del departamento
-- `POST /api/departments` - Crear departamento
-- `PUT /api/departments/{id}` - Actualizar departamento
-- `DELETE /api/departments/{id}` - Eliminar departamento
 
-## Inicio Rápido
+- `GET /api/departments`
+- `GET /api/departments/{id}`
+- `GET /api/departments/{id}/employees`
+- `GET /api/departments/{id}/total-salary`
+- `POST /api/departments`
+- `PUT /api/departments/{id}`
+- `DELETE /api/departments/{id}`
+
+## 7) Mejoras y optimizaciones aplicadas
+
+En esta iteración se introdujeron mejoras funcionales y de eficiencia:
+
+- Optimización de consultas de lectura en repositorios con `AsNoTracking()` para reducir overhead del change tracker en operaciones GET.
+- Borrado asíncrono con soporte de `CancellationToken` en repositorios (evita operación síncrona bloqueante).
+- Validación de integridad referencial en creación/actualización de empleados:
+  - Se verifica existencia del departamento antes de persistir.
+  - Se devuelve `400 BadRequest` con mensaje claro cuando no existe.
+- Mejora semántica HTTP en endpoints de departamentos:
+  - `GET /api/departments/{id}/employees` ahora devuelve `404` si el departamento no existe.
+  - `GET /api/departments/{id}/total-salary` ahora devuelve `404` si el departamento no existe.
+- Cobertura adicional de pruebas unitarias para los nuevos escenarios de validación.
+
+## 8) Inicio rápido
 
 ### Prerrequisitos
-- Docker y Docker Compose
-- .NET SDK 9.0 (opcional, para desarrollo local)
+
+- Docker + Docker Compose
+- .NET SDK 9.0 (para ejecución local y pruebas)
 
 ### Ejecución con Docker
 
 ```bash
-# Iniciar todos los servicios
-docker compose up -d
-
-# API: http://localhost:8080
-# SQL Server: localhost:1433
+docker compose up -d --build
 ```
 
-### Ejecución Local
+Servicios:
+
+- API: http://localhost:8080
+- Swagger: http://localhost:8080/swagger
+- SQL Server: localhost:1433
+
+### Ejecución local
 
 ```bash
-# Restaurar dependencias
 dotnet restore
-
-# Ejecutar la API
 dotnet run --project src/EmployeeManagement.Api
 ```
 
-Nota: el arranque en Development ejecuta `Database.Migrate()`. El repositorio no incluye migraciones; si se requieren, créalas con `dotnet ef migrations add <Nombre>` en la capa `Infrastructure` antes de usar `database update`.
+### Comandos útiles (Makefile)
 
-## Autenticación
+```bash
+make up
+make down
+make test
+make build
+```
 
-Para obtener un token JWT:
+## 9) Autenticación
+
+Credenciales de ejemplo actuales:
+
+- username: `admin`
+- password: `admin123`
+
+Solicitud de login:
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "username": "admin",
-    "password": "admin123"
-  }'
+  -d '{"username":"admin","password":"admin123"}'
 ```
 
-Luego úsalo en los headers:
+Uso del token:
 
-```
+```text
 Authorization: Bearer <TOKEN>
 ```
 
-Diagrama de flujo (login):
+## 10) Variables de entorno
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant A as AuthController
-    participant T as TokenService
-    C->>A: POST /api/auth/login {username,password}
-    A->>T: ValidateCredentials()
-    T-->>A: true/false
-    A->>T: GenerateToken(username)
-    T-->>A: JWT
-    A-->>C: 200 {token, expiration} / 401
-```
-
-## Swagger UI
-
-Documentación interactiva:
-- Desarrollo: http://localhost:8080/swagger
-
-## Testing
-
-```bash
-# Ejecutar todos los tests
-dotnet test
-
-# Cobertura
-dotnet test --collect:"XPlat Code Coverage"
-```
-
-## Variables de Entorno
-
-Usa variables (dummies en documentación):
+Ejemplo recomendado:
 
 ```bash
 ASPNETCORE_ENVIRONMENT=Development
 ConnectionStrings__Default=Server=<host>;Database=<db>;User Id=<user>;Password=<password>;TrustServerCertificate=True
-Jwt__Key=CHANGE_ME
+Jwt__Key=<secure-key>
 Jwt__Issuer=http://localhost:8080
 Jwt__Audience=http://localhost:8080
+SA_PASSWORD=<sql-sa-password>
 ```
 
-Validación de secretos (estado actual del repo):
-- `src/EmployeeManagement.Api/appsettings.json`: contiene cadena de conexión y clave JWT (versionado)
-- `docker-compose.yml`: define `SA_PASSWORD` y `Jwt__Key` (versionado)
-- `.env`: ignorado por Git (preferible ubicar secretos aquí)
+## 11) Health checks
 
-Recomendación: mover valores sensibles a `.env` y configurar por entorno; no incluir secretos en archivos versionados.
+- `/health/live`
+- `/health/ready`
 
-## Health Checks
+## 12) Testing
 
-- `/health/live`: liveness
-- `/health/ready`: readiness (verifica BD)
+```bash
+dotnet test
+dotnet test --collect:"XPlat Code Coverage"
+```
 
-## Modelo de Dominio
+## 13) Limitaciones actuales y siguientes mejoras sugeridas
 
-### Employee
-- Cálculo de salario según posición
-- Developer: +10%
-- Manager: +20%
-- HR/Sales: base
+- El login usa credenciales estáticas (no Identity/usuarios persistidos).
+- No hay pipeline CI/CD incluido en el repositorio.
+- No hay proyecto de pruebas de integración (solo unitarias).
+- Falta versionado explícito de API (`/api/v1`).
 
-### Department
-- Relación 1:N con Employees
-- Cálculo de salario total del departamento
+Siguientes pasos recomendados:
 
-## CI/CD
-
-No hay pipeline CI/CD incluido en este repositorio.
+- Integrar ASP.NET Core Identity + refresh tokens.
+- Agregar pruebas de integración con Testcontainers.
+- Incorporar pipeline CI (build + test + análisis).
+- Implementar logging estructurado (por ejemplo, Serilog).
 
 ## Autor
 
-**Luis Raigoso** (@LuisRai / lraigosov)
+Luis Raigoso (@LuisRai / lraigosov)
 
 ## Licencia
 
-Consulta las condiciones en el archivo `LICENSE` incluido en el repositorio.
+Consulta el archivo `LICENSE`.
